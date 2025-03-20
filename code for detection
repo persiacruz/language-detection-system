@@ -1,0 +1,45 @@
+import assemblyai as aai
+import speech_recognition as sr
+import time
+from langdetect import detect
+
+# Set AssemblyAI API key
+aai.settings.api_key = "ec44ed6c64244d57a3d125422deb42b8"
+
+# Function to send audio to AssemblyAI API and get the transcription
+def recognize_and_detect_language():
+    recognizer = sr.Recognizer()
+    with sr.Microphone() as source:
+        print("Listening... Please speak into the microphone.")
+        recognizer.adjust_for_ambient_noise(source)
+        try:
+            audio = recognizer.listen(source, timeout=5)
+        except sr.WaitTimeoutError:
+            print("No speech detected. Try again.")
+            return
+
+    # Save the recorded audio to a temporary file
+    with open("temp_audio.wav", "wb") as f:
+        f.write(audio.get_wav_data())
+
+    # Use AssemblyAI to transcribe the audio
+    transcriber = aai.Transcriber()
+
+    try:
+        # Transcribe the audio (you can use a local file or a URL, here it's using local audio)
+        transcript = transcriber.transcribe("./temp_audio.wav")
+
+        # Wait for the transcript to be ready (this can take a few seconds)
+        while transcript.status != 'completed':
+            time.sleep(3)
+            transcript = transcriber.get(transcript.id)
+
+        # Once transcription is done, detect the language
+        text = transcript.text
+        language = detect(text)
+        print(f"Detected Language: {language.upper()}")
+    except Exception as e:
+        print(f"Error: {str(e)}")
+
+# Run the function to record and detect language
+recognize_and_detect_language()

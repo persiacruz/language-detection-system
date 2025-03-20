@@ -1,0 +1,12 @@
+# `pip3 install assemblyai` (macOS)
+# `pip install assemblyai` (Windows)
+
+import assemblyai as aai
+
+aai.settings.api_key = "ec44ed6c64244d57a3d125422deb42b8"
+transcriber = aai.Transcriber()
+
+transcript = transcriber.transcribe("https://assembly.ai/news.mp4")
+# transcript = transcriber.transcribe("./my-local-audio-file.wav")
+
+print(transcript.text)
