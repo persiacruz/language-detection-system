@@ -1,19 +1,37 @@
 import assemblyai as aai
 import speech_recognition as sr
 import time
-from langdetect import detect
+import langid  
+import pyaudio
+
+print("PyAudio and SpeechRecognition are installed successfully!")
 
 # Set AssemblyAI API key
 aai.settings.api_key = "ec44ed6c64244d57a3d125422deb42b8"
+
+# Dictionary mapping language codes to full names
+language_names = {
+    'en': 'English',
+    'de': 'German',
+    'fr': 'French',
+    'es': 'Spanish',
+    'pt': 'Portuguese',
+    'it': 'Italian',
+    'ru': 'Russian',
+    'zh': 'Chinese',
+    'tl': 'Tagalog',
+    'ko': 'Korean',  
+}
 
 # Function to send audio to AssemblyAI API and get the transcription
 def recognize_and_detect_language():
     recognizer = sr.Recognizer()
     with sr.Microphone() as source:
         print("Listening... Please speak into the microphone.")
-        recognizer.adjust_for_ambient_noise(source)
+        recognizer.adjust_for_ambient_noise(source, duration=0.5)  # Adjust for noise
+
         try:
-            audio = recognizer.listen(source, timeout=5)
+            audio = recognizer.listen(source, timeout=10)  # Increased timeout for better speech detection
         except sr.WaitTimeoutError:
             print("No speech detected. Try again.")
             return
@@ -26,20 +44,46 @@ def recognize_and_detect_language():
     transcriber = aai.Transcriber()
 
     try:
-        # Transcribe the audio (you can use a local file or a URL, here it's using local audio)
+        # Transcribe the audio
         transcript = transcriber.transcribe("./temp_audio.wav")
 
-        # Wait for the transcript to be ready (this can take a few seconds)
+        # Wait for the transcript to be ready
         while transcript.status != 'completed':
             time.sleep(3)
             transcript = transcriber.get(transcript.id)
 
-        # Once transcription is done, detect the language
+        # Print and analyze the transcribed text
         text = transcript.text
-        language = detect(text)
-        print(f"Detected Language: {language.upper()}")
+        print(f"Transcribed Text: {text}")
+
+        # Use langid to detect language and get the confidence
+        scores = langid.rank(text)  # Get language ranks and scores
+        print(f"Language Scores: {scores}")  # Show language probabilities
+
+        # Increase the confidence threshold
+        threshold = -30  # Score threshold (lower score means better confidence)
+        
+        # Get the best detected language with confidence higher than the threshold
+        best_language = None
+        for lang, score in scores:
+            if score > threshold:
+                best_language = lang
+                break
+
+        if best_language is None:
+            best_language = 'en'  # Default to English if none exceed the threshold
+        
+        # Display the full name of the detected language
+        language = language_names.get(best_language, "Unknown")  # Default to "Unknown" if code not in dictionary
+        print(f"Detected Language: {language}")
+        
     except Exception as e:
         print(f"Error: {str(e)}")
 
 # Run the function to record and detect language
 recognize_and_detect_language()
+
+
+
+
+
